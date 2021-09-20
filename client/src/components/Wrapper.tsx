@@ -1,13 +1,16 @@
 import React, { ReactNode } from 'react'
 import { Box } from '@chakra-ui/react'
 
+type WrapperSize = 'regular' | 'small'
+
 interface IWapperProps {
-    children: ReactNode
+    children: ReactNode,
+    size?: WrapperSize
 }
 
-const Wrapper = ({children}: IWapperProps) => {
+const Wrapper = ({children, size = 'regular'}: IWapperProps) => {
     return (
-        <Box maxWidth='400px' w='100%' mt={8} mx='auto'>
+        <Box maxWidth={size === 'regular' ? '800px' : '400px'} w='100%' mt={8} mx='auto'>
             {children}
         </Box>
     )

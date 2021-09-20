@@ -1,10 +1,5 @@
-import {
-  Box,
-  Button,
-  Flex,
-  Spinner,
-  useToast,
-} from "@chakra-ui/react";
+import { Box, Button, Spinner, Flex, useToast, Link } from '@chakra-ui/react'
+import NextLink from 'next/link'
 import { Form, Formik, FormikHelpers } from "formik";
 import { useRouter } from "next/router";
 import React from "react";
@@ -18,6 +13,7 @@ import {
 } from "../generated/graphql";
 import { mapFieldErrors } from "../helpers/mapFieldErrors";
 import { useCheckAuth } from "../utils/useCheckAuth";
+import { initializeApollo } from '../lib/apolloClient';
 
 const Login = () => {
   const router = useRouter();
@@ -67,6 +63,10 @@ const Login = () => {
         duration: 3000,
         isClosable: true,
       });
+
+      const apolloClient = initializeApollo()
+			apolloClient.resetStore()
+      
       router.push("/");
     }
   };
@@ -78,7 +78,7 @@ const Login = () => {
           <Spinner />
         </Flex>
       ) : (
-        <Wrapper>
+        <Wrapper size='small'>
           {error && <p>Failed to login. Internal server error</p>}
           {data && data.login.success && (
             <p>Login successfully {JSON.stringify(data)}</p>
@@ -100,6 +100,11 @@ const Login = () => {
                     type="password"
                   ></InputField>
                 </Box>
+                <Flex mt={2}>
+									<NextLink href='/forgot-password'>
+										<Link ml='auto'>Forgot Password</Link>
+									</NextLink>
+								</Flex>
                 <Button
                   type="submit"
                   colorScheme="teal"
