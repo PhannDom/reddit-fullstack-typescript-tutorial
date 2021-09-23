@@ -1,7 +1,9 @@
 import {
 	Arg,
+	Ctx,
 	FieldResolver,
 	ID,
+	Int,
 	Mutation,
 	Query,
 	Resolver,
@@ -14,6 +16,9 @@ import { Post } from '../entities/Post'
 import { checkAuth } from '../middleware/checkAuth'
 import { UpdatePostInput } from '../types/UpdatePostInput'
 import { User } from '../entities/User'
+import { PaginatedPosts } from '../types/PaginatedPosts'
+import { Context } from '../types/Context'
+import { LessThan } from 'typeorm'
 
 @Resolver(_of => Post)
 export class PostResolver {
@@ -27,14 +32,17 @@ export class PostResolver {
 		return await User.findOne(root.userId)
 	}
 
-    @Mutation(_return => PostMutationResponse)
+	@Mutation(_return => PostMutationResponse)
+	@UseMiddleware(checkAuth)
 	async createPost(
-		@Arg('createPostInput') { title, text }: CreatePostInput
+		@Arg('createPostInput') { title, text }: CreatePostInput,
+		@Ctx() { req }: Context
 	): Promise<PostMutationResponse> {
 		try {
 			const newPost = Post.create({
 				title,
-				text
+				text,
+				userId: req.session.userId
 			})
 
 			await newPost.save()
@@ -55,9 +63,44 @@ export class PostResolver {
 		}
 	}
 
-	@Query(_return => [Post])
-	async posts(): Promise<Post[]> {
-		return Post.find()
+	@Query(_return => PaginatedPosts, { nullable: true })
+	async posts(
+		@Arg('limit', _type => Int) limit: number,
+		@Arg('cursor', { nullable: true }) cursor?: string
+	): Promise<PaginatedPosts | null> {
+		try {
+			const totalPostCount = await Post.count()
+			const realLimit = Math.min(10, limit)
+
+			const findOptions: { [key: string]: any } = {
+				order: {
+					createdAt: 'DESC'
+				},
+				take: realLimit
+			}
+
+			let lastPost: Post[] = []
+			if (cursor) {
+				findOptions.where = { createdAt: LessThan(cursor) }
+
+				lastPost = await Post.find({ order: { createdAt: 'ASC' }, take: 1 })
+			}
+
+			const posts = await Post.find(findOptions)
+
+			return {
+				totalCount: totalPostCount,
+				cursor: posts[posts.length - 1].createdAt,
+				hasMore: cursor
+					? posts[posts.length - 1].createdAt.toString() !==
+					lastPost[0].createdAt.toString()
+					: posts.length !== totalPostCount,
+				paginatedPosts: posts
+			}
+		} catch (error) {
+			console.log(error)
+			return null
+		}
 	}
 
 	@Query(_return => Post, { nullable: true })
@@ -70,19 +113,29 @@ export class PostResolver {
 			return undefined
 		}
 	}
-	
+
 	@Mutation(_return => PostMutationResponse)
 	@UseMiddleware(checkAuth)
 	async updatePost(
 		@Arg('updatePostInput') { id, title, text }: UpdatePostInput,
+		@Ctx() { req }: Context
 	): Promise<PostMutationResponse> {
 		const existingPost = await Post.findOne(id)
-		if (!existingPost)
+		if (!existingPost) {
 			return {
 				code: 400,
 				success: false,
 				message: 'Post not found'
 			}
+		}
+
+		if (existingPost.userId !== req.session.userId) {
+			return {
+				code: 401,
+				success: false,
+				message: 'Unauthorised'
+			}
+		}
 
 		existingPost.title = title
 		existingPost.text = text
@@ -100,15 +153,25 @@ export class PostResolver {
 	@Mutation(_return => PostMutationResponse)
 	@UseMiddleware(checkAuth)
 	async deletePost(
-		@Arg('id', _type => ID) id: number
+		@Arg('id', _type => ID) id: number,
+		@Ctx() { req }: Context
 	): Promise<PostMutationResponse> {
 		const existingPost = await Post.findOne(id)
-		if (!existingPost)
+		if (!existingPost) {
 			return {
 				code: 400,
 				success: false,
 				message: 'Post not found'
 			}
+		}
+		
+		if (existingPost.userId !== req.session.userId) {
+			return {
+				code: 401,
+				success: false,
+				message: 'Unauthorised'
+			}
+		}
 
 		await Post.delete({ id })
 
