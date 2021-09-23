@@ -67,6 +67,9 @@ function createApolloClient(headers: IncomingHttpHeaders | null = null) {
 						posts: {
 							keyArgs: false,
 							merge(existing, incoming) {
+								console.log("Existing: ", existing);
+								console.log("InComing: ", incoming);
+
 								let paginatedPosts: Post[] = []
 
 								if (existing && existing.paginatedPosts) {

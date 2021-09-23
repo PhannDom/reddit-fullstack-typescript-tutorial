@@ -1,56 +1,102 @@
-import { Box, Flex, Heading, Link, Spinner, Stack, Text } from "@chakra-ui/react";
-import React from "react";
-import { PostsDocument, usePostsQuery } from "../generated/graphql";
-import { addApolloState, initializeApollo } from "../lib/apolloClient";
+import { NetworkStatus } from '@apollo/client'
+import {
+	Box,
+	Button,
+	Flex,
+	Heading,
+	Link,
+	Spinner,
+	Stack,
+	Text
+} from '@chakra-ui/react'
+import { GetServerSideProps, GetServerSidePropsContext } from 'next'
 import NextLink from 'next/link'
-import Layout from "../components/Layout";
-import PostEditDeleteButtons from "../components/PostEditDeleteButtons";
+import Layout from '../components/Layout'
+import PostEditDeleteButtons from '../components/PostEditDeleteButtons'
+import { PostsDocument, useMeQuery, usePostsQuery } from '../generated/graphql'
+import { addApolloState, initializeApollo } from '../lib/apolloClient'
+
+export const limit = 3
+
 const Index = () => {
-  const {data, loading} = usePostsQuery()
-  
-  return (
-    <Layout>
-      {loading ? (
-        <Flex justifyContent='center' alignItems='center' minH='100vh'>
-          <Spinner />
-        </Flex>
-      ): (
-        <Stack spacing={8}>
-          {data?.posts?.map(post => {
-            <Flex key={post.id} p={5} shadow='md' borderWidth='1px'>{post.title}
-              <Box flex={1}>
-                <NextLink href={`/post/${post.id}`}>
-                  <Link>
-                    <Heading fontSize='x1'>
-                      {post.title}
-                    </Heading>
-                  </Link>
-                </NextLink>
-                <Text>Posted By {post.user.username}</Text>
-                <Flex align='center'>
-                  <Text mt={4}>{post.textSnippet}</Text>
-                  <Box ml='auto'><PostEditDeleteButtons /></Box>
-                </Flex>
-              </Box>
-            </Flex>
-          })}
-        </Stack>
-      )}
-    </Layout>
-  )
-} 
+	const {data: meData} = useMeQuery()
+	const { data, loading, fetchMore, networkStatus } = usePostsQuery({
+		variables: { limit },
 
+		// component nao render boi cai Posts query, se rerender khi networkStatus thay doi, tuc la fetchMore
+		notifyOnNetworkStatusChange: true
+	})
 
-export const getStaticProps = async () => {
-  const apolloClient = initializeApollo()
+	const loadingMorePosts = networkStatus === NetworkStatus.fetchMore
 
-  await apolloClient.query({
-    query: PostsDocument
-  })
+	const loadMorePosts = () =>
+		fetchMore({ variables: { cursor: data?.posts?.cursor } })
 
-  return addApolloState(apolloClient, {
-    props: {}
-  })
+	console.log(data?.posts?.paginatedPosts);
+	return (
+		<Layout>
+			{loading && !loadingMorePosts ? (
+				<Flex justifyContent='center' alignItems='center' minH='100vh'>
+					<Spinner />
+				</Flex>
+			) : (
+				<Stack spacing={8}>
+					{data?.posts?.paginatedPosts.map(post => (
+						<Flex key={post.id} p={5} shadow='md' borderWidth='1px'>
+							<Box flex={1}>
+								<NextLink href={`/post/${post.id}`}>
+									<Link>
+										<Heading fontSize='xl'>{post.title} --- {post.id}</Heading>
+									</Link>
+								</NextLink>
+								<Text>posted by {post.user.username}</Text>
+								<Flex align='center'>
+									<Text mt={4}>{post.textSnippet}</Text>
+								</Flex>
+								<Box ml='auto'>
+									{meData?.me?.id === post.user.id && 
+									<PostEditDeleteButtons 
+										postId={post.id}
+										postUserId={post.user.id}
+									/>}
+								</Box>	
+							</Box>
+						</Flex>
+					))}
+				</Stack>
+			)}
+
+			{data?.posts?.hasMore && (
+				<Flex>
+					<Button
+						m='auto'
+						my={8}
+						isLoading={loadingMorePosts}
+						onClick={loadMorePosts}
+					>
+						{loadingMorePosts ? 'Loading' : 'Show more'}
+					</Button>
+				</Flex>
+			)}
+		</Layout>
+	)
 }
 
-export default Index;
+export const getServerSideProps: GetServerSideProps = async (
+	context: GetServerSidePropsContext
+) => {
+	const apolloClient = initializeApollo({ headers: context.req.headers })
+
+	await apolloClient.query({
+		query: PostsDocument,
+		variables: {
+			limit
+		}
+	})
+
+	return addApolloState(apolloClient, {
+		props: {}
+	})
+}
+
+export default Index

@@ -23,6 +23,8 @@ const PostEdit = () => {
 	const router = useRouter()
 	const postId = router.query.id as string
 
+	console.log(postId);
+
 	const { data: meData, loading: meLoading } = useMeQuery()
 
 	const { data: postData, loading: postLoading } = usePostQuery({
