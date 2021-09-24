@@ -18,36 +18,54 @@ import { ApolloServerPluginLandingPageGraphQLPlayground } from 'apollo-server-co
 import cors from 'cors'
 import { Upvote } from './entities/Upvote'
 import { buildDataLoaders } from './utils/dataLoaders'
+import path from 'path'
 
 const main = async () => {
     const connection = await createConnection({
         type: 'postgres',
-        database: 'reddit',
-        username: process.env.DB_USERNAME_DEV,
-        password: process.env.DB_PASSWORD_DEV,
+        ...(__prod__ ? { url: process.env.DATABASE_URL } : {
+            database: 'reddit',
+            username: process.env.DB_USERNAME_DEV,
+            password: process.env.DB_PASSWORD_DEV,
+        }),
         logging: true,
-        synchronize: true,
-        entities: [User, Post, Upvote]
+        ...(__prod__ ? {
+            extra: {
+                ssl: {
+                    rejectUnauthorized: false
+                }
+            },
+            ssl: true
+        } : {}),
+        ...(__prod__ ? {} : {
+            synchronize: true,
+        }),
+        entities: [User, Post, Upvote],
+        migrations: [path.join(__dirname, '/migrations/*')]
     })
+
+    if(__prod__) await connection.runMigrations()
 
     const app = express()
 
     app.use(
-		cors({
-			origin: 'http://localhost:3000',
-			credentials: true
-		})
-	)
+        cors({
+            origin: __prod__ 
+                ? process.env.CORS_ORIGIN_PROD 
+                : process.env.CORS_ORIGIN_DEV,
+            credentials: true
+        })
+    )
 
     //Session/Cookie store
     const mongoUrl = `mongodb+srv://${process.env.SESSION_DB_USERNAME_DEV_PROD}:${process.env.SESSION_DB_PASSWORD_DEV_PROD}@reddit.vash8.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`
 
-    await mongoose.connect(mongoUrl,  {
-		useCreateIndex: true,
-		useNewUrlParser: true,
-		useUnifiedTopology: true,
-		useFindAndModify: false
-	})
+    await mongoose.connect(mongoUrl, {
+        useCreateIndex: true,
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        useFindAndModify: false
+    })
 
     console.log('MongoDB Connected')
 
@@ -55,10 +73,11 @@ const main = async () => {
         name: COOKIE_NAME,
         store: MongoStore.create({ mongoUrl }),
         cookie: {
-            maxAge: 1000 * 60 *60, // one hour
+            maxAge: 1000 * 60 * 60, // one hour
             httpOnly: true, //JS FE can not access the cookie
             secure: __prod__, //cookie only work in https
-            sameSite: 'lax' // protection againt CSRF
+            sameSite: 'lax', // protection againt CSRF
+            domain: __prod__ ? '.vercel.app' : undefined
         },
         secret: process.env.SESSION_SECRET_DEV_PROD as string,
         saveUninitialized: false, // dont save empty session, right from the start
@@ -70,7 +89,7 @@ const main = async () => {
             resolvers: [HelloResolver, UserResolver, PostResolver],
             validate: false
         }),
-        context: ({req, res}) : Context => ({req, res, connection, dataLoaders: buildDataLoaders()}),
+        context: ({ req, res }): Context => ({ req, res, connection, dataLoaders: buildDataLoaders() }),
         plugins: [ApolloServerPluginLandingPageGraphQLPlayground()]
     })
 
