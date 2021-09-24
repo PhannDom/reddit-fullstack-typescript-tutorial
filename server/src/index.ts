@@ -16,16 +16,18 @@ import { Context } from './types/Context'
 import { PostResolver } from './resolvers/post'
 import { ApolloServerPluginLandingPageGraphQLPlayground } from 'apollo-server-core'
 import cors from 'cors'
+import { Upvote } from './entities/Upvote'
+import { buildDataLoaders } from './utils/dataLoaders'
 
 const main = async () => {
-    await createConnection({
+    const connection = await createConnection({
         type: 'postgres',
         database: 'reddit',
         username: process.env.DB_USERNAME_DEV,
         password: process.env.DB_PASSWORD_DEV,
         logging: true,
         synchronize: true,
-        entities: [User, Post]
+        entities: [User, Post, Upvote]
     })
 
     const app = express()
@@ -68,7 +70,7 @@ const main = async () => {
             resolvers: [HelloResolver, UserResolver, PostResolver],
             validate: false
         }),
-        context: ({req, res}) : Context => ({req, res}),
+        context: ({req, res}) : Context => ({req, res, connection, dataLoaders: buildDataLoaders()}),
         plugins: [ApolloServerPluginLandingPageGraphQLPlayground()]
     })
 
