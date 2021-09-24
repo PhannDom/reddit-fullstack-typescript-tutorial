@@ -11,8 +11,10 @@ import {
 } from '@chakra-ui/react'
 import { GetServerSideProps, GetServerSidePropsContext } from 'next'
 import NextLink from 'next/link'
+import React from 'react'
 import Layout from '../components/Layout'
 import PostEditDeleteButtons from '../components/PostEditDeleteButtons'
+import UpVoteSession from '../components/UpVoteSession'
 import { PostsDocument, useMeQuery, usePostsQuery } from '../generated/graphql'
 import { addApolloState, initializeApollo } from '../lib/apolloClient'
 
@@ -43,6 +45,7 @@ const Index = () => {
 				<Stack spacing={8}>
 					{data?.posts?.paginatedPosts.map(post => (
 						<Flex key={post.id} p={5} shadow='md' borderWidth='1px'>
+							<UpVoteSession post={post} />
 							<Box flex={1}>
 								<NextLink href={`/post/${post.id}`}>
 									<Link>
