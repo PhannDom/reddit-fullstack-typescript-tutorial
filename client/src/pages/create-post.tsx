@@ -21,12 +21,10 @@ const CreatePost = () => {
 				cache.modify({
 					fields: {
 						posts(existing) {
-							console.log("EXISTING", existing)
 							if (data?.createPost.success && data.createPost.post) {
 								// Post:new_id
 								const newPostRef = cache.identify(data.createPost.post)
 
-								console.log("New post ref", newPostRef)
 								const newPostsAfterCreation = {
 									...existing,
 									totalCount: existing.totalCount + 1,
@@ -35,7 +33,6 @@ const CreatePost = () => {
 										...existing.paginatedPosts // [{__ref: 'Post:1'}, {__ref: 'Post:2'}]
 									]
 								}
-								console.log("New Posts After Creation", newPostsAfterCreation)
 
 								return newPostsAfterCreation
 							}

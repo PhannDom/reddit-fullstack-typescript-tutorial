@@ -11,17 +11,15 @@ import {
 } from '@chakra-ui/react'
 import { GetServerSideProps, GetServerSidePropsContext } from 'next'
 import NextLink from 'next/link'
-import React from 'react'
 import Layout from '../components/Layout'
 import PostEditDeleteButtons from '../components/PostEditDeleteButtons'
-import UpVoteSession from '../components/UpVoteSession'
-import { PostsDocument, useMeQuery, usePostsQuery } from '../generated/graphql'
+import { PostsDocument, usePostsQuery } from '../generated/graphql'
 import { addApolloState, initializeApollo } from '../lib/apolloClient'
+import UpvoteSection from '../components/UpvoteSection'
 
 export const limit = 3
 
 const Index = () => {
-	const {data: meData} = useMeQuery()
 	const { data, loading, fetchMore, networkStatus } = usePostsQuery({
 		variables: { limit },
 
@@ -34,7 +32,6 @@ const Index = () => {
 	const loadMorePosts = () =>
 		fetchMore({ variables: { cursor: data?.posts?.cursor } })
 
-	console.log(data?.posts?.paginatedPosts);
 	return (
 		<Layout>
 			{loading && !loadingMorePosts ? (
@@ -45,24 +42,23 @@ const Index = () => {
 				<Stack spacing={8}>
 					{data?.posts?.paginatedPosts.map(post => (
 						<Flex key={post.id} p={5} shadow='md' borderWidth='1px'>
-							<UpVoteSession post={post} />
+							<UpvoteSection post={post} />
 							<Box flex={1}>
 								<NextLink href={`/post/${post.id}`}>
 									<Link>
-										<Heading fontSize='xl'>{post.title} --- {post.id}</Heading>
+										<Heading fontSize='xl'>{post.title}</Heading>
 									</Link>
 								</NextLink>
 								<Text>posted by {post.user.username}</Text>
 								<Flex align='center'>
 									<Text mt={4}>{post.textSnippet}</Text>
+									<Box ml='auto'>
+										<PostEditDeleteButtons
+											postId={post.id}
+											postUserId={post.user.id}
+										/>
+									</Box>
 								</Flex>
-								<Box ml='auto'>
-									{meData?.me?.id === post.user.id && 
-									<PostEditDeleteButtons 
-										postId={post.id}
-										postUserId={post.user.id}
-									/>}
-								</Box>	
 							</Box>
 						</Flex>
 					))}

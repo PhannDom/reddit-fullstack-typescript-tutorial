@@ -75,7 +75,7 @@ const ChangePassword = () => {
 		)
 	} else if (!query.token || !query.userId)
 		return (
-			<Wrapper>
+			<Wrapper size='small'>
 				<Alert status='error'>
 					<AlertIcon />
 					<AlertTitle>Invalid password change request</AlertTitle>
@@ -90,7 +90,7 @@ const ChangePassword = () => {
 		)
 	else
 		return (
-			<Wrapper size='small'>
+			<Wrapper>
 				<Formik initialValues={initialValues} onSubmit={onChangePasswordSubmit}>
 					{({ isSubmitting }) => (
 						<Form>
