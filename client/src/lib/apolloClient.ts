@@ -48,6 +48,7 @@ function createApolloClient(headers: IncomingHttpHeaders | null = null) {
 	}
 
 	const httpLink = new HttpLink({
+		// uri: 'http://localhost:4000/graphql', // Server URL (must be absolute)
 		uri:
 			process.env.NODE_ENV === 'production'
 				? 'https://floating-taiga-99357.herokuapp.com/graphql'
@@ -66,9 +67,6 @@ function createApolloClient(headers: IncomingHttpHeaders | null = null) {
 						posts: {
 							keyArgs: false,
 							merge(existing, incoming) {
-								console.log("Existing: ", existing);
-								console.log("InComing: ", incoming);
-
 								let paginatedPosts: Post[] = []
 
 								if (existing && existing.paginatedPosts) {
