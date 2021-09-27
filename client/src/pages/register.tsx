@@ -25,7 +25,7 @@ const Register = () => {
     password: "",
   };
 
-  const [registerUser, { loading: _registerUserLoading, data, error }] =
+  const [registerUser, { loading: _registerUserLoading, error }] =
     useRegisterMutation();
 
   const toast = useToast()
