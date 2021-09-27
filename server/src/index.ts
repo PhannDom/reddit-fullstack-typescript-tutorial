@@ -60,7 +60,7 @@ const main = async () => {
 	)
 
 	// Session/Cookie store
-	const mongoUrl = `mongodb+srv://${process.env.SESSION_DB_USERNAME_DEV_PROD}:${process.env.SESSION_DB_PASSWORD_DEV_PROD}@reddit.d1jnu.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`
+	const mongoUrl = `mongodb+srv://${process.env.SESSION_DB_USERNAME_DEV_PROD}:${process.env.SESSION_DB_PASSWORD_DEV_PROD}@reddit.vash8.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`
 	await mongoose.connect(mongoUrl, {
 		useCreateIndex: true,
 		useNewUrlParser: true,
