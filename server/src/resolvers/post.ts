@@ -1,3 +1,4 @@
+import { UpdatePostInput } from '../types/UpdatePostInput'
 import {
 	Arg,
 	Ctx,
@@ -9,23 +10,22 @@ import {
 	registerEnumType,
 	Resolver,
 	Root,
-	UseMiddleware,
+	UseMiddleware
 } from 'type-graphql'
-import { PostMutationResponse } from '../types/PostMutationResponse'
-import { CreatePostInput } from '../types/CreatePostInput'
 import { Post } from '../entities/Post'
+import { Upvote } from '../entities/Upvote'
+import { CreatePostInput } from '../types/CreatePostInput'
+import { PostMutationResponse } from '../types/PostMutationResponse'
 import { checkAuth } from '../middleware/checkAuth'
-import { UpdatePostInput } from '../types/UpdatePostInput'
 import { User } from '../entities/User'
 import { PaginatedPosts } from '../types/PaginatedPosts'
-import { Context } from '../types/Context'
 import { LessThan } from 'typeorm'
+import { Context } from '../types/Context'
 import { VoteType } from '../types/VoteType'
-import { UserInputError } from 'apollo-server-errors'
-import { Upvote } from '../entities/Upvote'
+import { UserInputError } from 'apollo-server-core'
 
 registerEnumType(VoteType, {
-	name: "VoteType"
+	name: 'VoteType' // this one is mandatory
 })
 
 @Resolver(_of => Post)
@@ -38,8 +38,9 @@ export class PostResolver {
 	@FieldResolver(_return => User)
 	async user(
 		@Root() root: Post,
-		@Ctx() { dataLoaders: { userLoader } }: Context) {
-		//return await User.findOne(root.userId)
+		@Ctx() { dataLoaders: { userLoader } }: Context
+	) {
+		// return await User.findOne(root.userId)
 		return await userLoader.load(root.userId)
 	}
 
@@ -55,10 +56,9 @@ export class PostResolver {
 		// })
 
 		const existingVote = await voteTypeLoader.load({
-				postId: root.id,
-				userId: req.session.userId
-			}
-		)
+			postId: root.id,
+			userId: req.session.userId
+		})
 
 		return existingVote ? existingVote.value : 0
 	}
@@ -124,7 +124,7 @@ export class PostResolver {
 				cursor: posts[posts.length - 1].createdAt,
 				hasMore: cursor
 					? posts[posts.length - 1].createdAt.toString() !==
-					lastPost[0].createdAt.toString()
+					  lastPost[0].createdAt.toString()
 					: posts.length !== totalPostCount,
 				paginatedPosts: posts
 			}
@@ -152,20 +152,15 @@ export class PostResolver {
 		@Ctx() { req }: Context
 	): Promise<PostMutationResponse> {
 		const existingPost = await Post.findOne(id)
-		if (!existingPost) {
+		if (!existingPost)
 			return {
 				code: 400,
 				success: false,
 				message: 'Post not found'
 			}
-		}
 
 		if (existingPost.userId !== req.session.userId) {
-			return {
-				code: 401,
-				success: false,
-				message: 'Unauthorised'
-			}
+			return { code: 401, success: false, message: 'Unauthorised' }
 		}
 
 		existingPost.title = title
@@ -188,21 +183,18 @@ export class PostResolver {
 		@Ctx() { req }: Context
 	): Promise<PostMutationResponse> {
 		const existingPost = await Post.findOne(id)
-		if (!existingPost) {
+		if (!existingPost)
 			return {
 				code: 400,
 				success: false,
 				message: 'Post not found'
 			}
-		}
 
 		if (existingPost.userId !== req.session.userId) {
-			return {
-				code: 401,
-				success: false,
-				message: 'Unauthorised'
-			}
+			return { code: 401, success: false, message: 'Unauthorised' }
 		}
+
+		await Upvote.delete({postId: id})
 
 		await Post.delete({ id })
 
@@ -214,10 +206,16 @@ export class PostResolver {
 	async vote(
 		@Arg('postId', _type => Int) postId: number,
 		@Arg('inputVoteValue', _type => VoteType) inputVoteValue: VoteType,
-		@Ctx() { req: { session: { userId } }, connection }: Context
+		@Ctx()
+		{
+			req: {
+				session: { userId }
+			},
+			connection
+		}: Context
 	): Promise<PostMutationResponse> {
 		return await connection.transaction(async transactionEntityManager => {
-			//Check if post exists
+			// check if post exists
 			let post = await transactionEntityManager.findOne(Post, postId)
 			if (!post) {
 				throw new UserInputError('Post not found')
@@ -228,6 +226,7 @@ export class PostResolver {
 				postId,
 				userId
 			})
+
 			if (existingVote && existingVote.value !== inputVoteValue) {
 				await transactionEntityManager.save(Upvote, {
 					...existingVote,
@@ -239,6 +238,7 @@ export class PostResolver {
 					points: post.points + 2 * inputVoteValue
 				})
 			}
+
 			if (!existingVote) {
 				const newVote = transactionEntityManager.create(Upvote, {
 					userId,
@@ -246,6 +246,7 @@ export class PostResolver {
 					value: inputVoteValue
 				})
 				await transactionEntityManager.save(newVote)
+
 				post.points = post.points + inputVoteValue
 				post = await transactionEntityManager.save(post)
 			}

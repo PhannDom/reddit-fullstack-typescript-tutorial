@@ -1,4 +1,3 @@
-
 import { RegisterInput } from '../types/RegisterInput'
 
 export const validateRegisterInput = (registerInput: RegisterInput) => {

@@ -6,7 +6,7 @@ import {
 	Mutation,
 	Query,
 	Resolver,
-	Root,
+	Root
 } from 'type-graphql'
 import argon2 from 'argon2'
 import { UserMutationResponse } from '../types/UserMutationResponse'
@@ -15,16 +15,16 @@ import { validateRegisterInput } from '../utils/validateRegisterInput'
 import { LoginInput } from '../types/LoginInput'
 import { Context } from '../types/Context'
 import { COOKIE_NAME } from '../constants'
-import { ForgotPasswordInput } from '../types/ForgotPasswordInput'
+import { ForgotPasswordInput } from '../types/ForgotPassword'
 import { sendEmail } from '../utils/sendEmail'
-import { v4 as uuidv4 } from 'uuid'
 import { TokenModel } from '../models/Token'
+import { v4 as uuidv4 } from 'uuid'
 import { ChangePasswordInput } from '../types/ChangePasswordInput'
 
 @Resolver(_of => User)
 export class UserResolver {
 	@FieldResolver(_return => String)
-	email(@Root() user: User, @Ctx() {req}: Context) {
+	email(@Root() user: User, @Ctx() { req }: Context) {
 		return req.session.userId === user.id ? user.email : ''
 	}
 
@@ -34,6 +34,7 @@ export class UserResolver {
 		const user = await User.findOne(req.session.userId)
 		return user
 	}
+
 	@Mutation(_return => UserMutationResponse)
 	async register(
 		@Arg('registerInput') registerInput: RegisterInput,
@@ -56,8 +57,9 @@ export class UserResolver {
 					errors: [
 						{
 							field: existingUser.username === username ? 'username' : 'email',
-							message: `${existingUser.username === username ? 'Username' : 'Email'
-								} already taken`
+							message: `${
+								existingUser.username === username ? 'Username' : 'Email'
+							} already taken`
 						}
 					]
 				}
@@ -155,6 +157,7 @@ export class UserResolver {
 			})
 		})
 	}
+
 	@Mutation(_return => Boolean)
 	async forgotPassword(
 		@Arg('forgotPasswordInput') forgotPasswordInput: ForgotPasswordInput

@@ -1,46 +1,55 @@
 import { Field, ID, ObjectType } from 'type-graphql'
-import { BaseEntity, Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
-import { Upvote } from './Upvote';
-import { User } from './User';
+import {
+	BaseEntity,
+	Column,
+	CreateDateColumn,
+	Entity,
+	ManyToOne,
+	OneToMany,
+	PrimaryGeneratedColumn,
+	UpdateDateColumn
+} from 'typeorm'
+import { Upvote } from './Upvote'
+import { User } from './User'
 
 @ObjectType()
 @Entity()
-export class Post extends BaseEntity{
-    @Field(_type => ID)
-    @PrimaryGeneratedColumn()
-    id!: number
+export class Post extends BaseEntity {
+	@Field(_type => ID)
+	@PrimaryGeneratedColumn()
+	id!: number
 
-    @Field()
-    @Column()
-    title!: string
+	@Field()
+	@Column()
+	title!: string
 
-    @Field()
-    @Column()
-    userId!: number
+	@Field()
+	@Column()
+	userId!: number
 
-    @Field(_type => User)
-    @ManyToOne(() => User, user => user.posts)
-    user: User
+	@Field(_type => User)
+	@ManyToOne(() => User, user => user.posts)
+	user: User
 
-    @OneToMany(_to => Upvote, upvote => upvote.post)
-    upvotes: Upvote[]
+	@OneToMany(_to => Upvote, upvote => upvote.post)
+	upvotes: Upvote[]
 
-    @Field()
-    @Column({default: 0})
-    points!: number
+	@Field()
+	@Column({ default: 0 })
+	points!: number
 
-    @Field()
+	@Field()
 	voteType!: number
 
-    @Field()
-    @Column()
-    text!: string
+	@Field()
+	@Column()
+	text!: string
 
-    @Field()
-    @CreateDateColumn({type: 'timestamptz'})
-    createdAt: Date
+	@Field()
+	@CreateDateColumn({ type: 'timestamptz' })
+	createdAt: Date
 
-    @Field()
-    @UpdateDateColumn({type: 'timestamptz'})
-    updatedAt: Date
+	@Field()
+	@UpdateDateColumn({ type: 'timestamptz' })
+	updatedAt: Date
 }
